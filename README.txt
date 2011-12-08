@@ -8,7 +8,7 @@ get credentials.
 cl-oauth complains if the content type is not text.
 (push '("application" . "x-www-form-urlencoded") drakma:*text-content-types*)
 
-Clone into a dir that quicklips knows about.
+Clone into a dir that quicklisp knows about.
 (ql:quickload :cl-dropbox)
 (in-package :cl-dropbox)
 
