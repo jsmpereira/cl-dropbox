@@ -37,44 +37,41 @@
     (when (zerop (length result))
       (cl-oauth:authorize-request-token *request-token*))))
 
-(defun get-account-info (&optional (decode t))
+(defun get-account-info (&key (decode t))
   "Retrieves information about the user's account."
-  (let ((result (cl-oauth:access-protected-resource *account-info-uri* *access-token*)))
-    (if decode
-      (json:decode-json-from-string result)
-      result)))
+  (multiple-value-bind (body status)
+      (cl-oauth:access-protected-resource *account-info-uri* *access-token*)
+    (handle-response body status decode)))
 
 (defun get-metadata (&key (path nil path-supplied-p) (decode t))
   "The metadata API location provides the ability to retrieve file and folder metadata and manipulate the directory structure by moving or deleting files and folders."
   (let ((merged-path (if path-supplied-p
                           (concatenate 'string *metadata-uri* path)
                           *metadata-uri*)))
-    (multiple-value-bind (body code)
+    (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token*)
-      (case code
-        (404 (values 404 "Specified file path not found."))
-        (200 (if decode
-                 (json:decode-json-from-string body)
-                 body))))))
+      (handle-response body status decode))))
 
 (defun create-folder (&key path (root "dropbox") (decode t))
   "Create a folder relative to the user's Dropbox root or the user's application sandbox folder."
-  (let ((result (cl-oauth:access-protected-resource *create-folder-uri* *access-token*
-                                                    :user-parameters `(("path" . ,path)
-                                                                       ("root" . ,root)))))
-    (if decode
-        (json:decode-json-from-string result)
-        result)))
+  (multiple-value-bind (body status)
+      (cl-oauth:access-protected-resource *create-folder-uri* *access-token*
+                                          :user-parameters `(("path" . ,path)
+                                                             ("root" . ,root)))
+    (handle-response body status decode)))
 
 (defun delete-content (&key path (root "dropbox") (decode t))
   "Deletes a file or folder."
-  (multiple-value-bind (result code)
+  (multiple-value-bind (body status)
       (cl-oauth:access-protected-resource *delete-uri* *access-token*
                                           :user-parameters `(("path" . ,path)
                                                              ("root" . ,root)))
-    (case code
-      (404 (format t "Specified file path not found."))
-      (400 (format t "Root parameter not Dropbox or sandbox. Operation attempted not allowed by token type. No path specified."))
-      (200 (if decode
-               (json:decode-json-from-string result)
-               (values result code))))))
+    
+    (handle-response body status decode)))
+
+(defun handle-response (body status decode)
+  (if (eql status 200)
+      (if decode
+          (json:decode-json-from-string body)
+          body)
+      (values (json:decode-json-from-string (flexi-streams:octets-to-string body)) status)))
