@@ -53,7 +53,7 @@
   "The metadata API location provides the ability to retrieve file and folder metadata and manipulate the directory structure by moving or deleting files and folders."
   (let ((merged-path (if path-supplied-p
                           (concatenate 'string *metadata-uri* root path)
-                          *metadata-uri*)))
+                          (concatenate 'string *metadata-uri* root))))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token*)
       (handle-response body status decode))))
