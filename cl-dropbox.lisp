@@ -12,12 +12,14 @@
 (defparameter *get-access-token-endpoint* (concatenate 'string *api-root* "/oauth/access_token"))
 
 (defparameter *account-info-uri* (concatenate 'string *api-root* "/account/info"))
-(defparameter *metadata-uri* (concatenate 'string *api-root* "/metadata/dropbox"))
+(defparameter *metadata-uri* (concatenate 'string *api-root* "/metadata"))
 (defparameter *create-folder-uri* (concatenate 'string *api-root* "/fileops/create_folder"))
 (defparameter *delete-uri* (concatenate 'string *api-root* "/fileops/delete"))
 
 (defvar *request-token* nil)
 (defvar *access-token* nil)
+
+;; Authentication
 
 (defun set-credentials (&key key secret)
   (setf *consumer-token* (cl-oauth:make-consumer-token :key key :secret secret)))
@@ -37,21 +39,26 @@
     (when (zerop (length result))
       (cl-oauth:authorize-request-token *request-token*))))
 
+;; API calls
+
+; Dropbox accounts
 (defun get-account-info (&key (decode t))
   "Retrieves information about the user's account."
   (multiple-value-bind (body status)
       (cl-oauth:access-protected-resource *account-info-uri* *access-token*)
     (handle-response body status decode)))
 
-(defun get-metadata (&key (path nil path-supplied-p) (decode t))
+; Files and Metadata
+(defun get-metadata (&key (path nil path-supplied-p) (root "/dropbox") (decode t))
   "The metadata API location provides the ability to retrieve file and folder metadata and manipulate the directory structure by moving or deleting files and folders."
   (let ((merged-path (if path-supplied-p
-                          (concatenate 'string *metadata-uri* path)
+                          (concatenate 'string *metadata-uri* root path)
                           *metadata-uri*)))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token*)
       (handle-response body status decode))))
 
+; File Operations
 (defun create-folder (&key path (root "dropbox") (decode t))
   "Create a folder relative to the user's Dropbox root or the user's application sandbox folder."
   (multiple-value-bind (body status)
@@ -66,10 +73,10 @@
       (cl-oauth:access-protected-resource *delete-uri* *access-token*
                                           :user-parameters `(("path" . ,path)
                                                              ("root" . ,root)))
-    
     (handle-response body status decode)))
 
-(defun handle-response (body status decode)
+; Convenience functions
+(defun handle-response (body status &optional (decode t))
   (if (eql status 200)
       (if decode
           (json:decode-json-from-string body)
