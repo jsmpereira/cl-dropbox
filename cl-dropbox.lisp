@@ -5,6 +5,7 @@
 ;;; "cl-dropbox" goes here. Hacks and glory await!
 
 (defparameter *api-root* "https://api.dropbox.com/1")
+(defparameter *api-content* "https://api-content.dropbox.com/1")
 (defparameter *consumer-token* nil)
 
 (defparameter *get-request-token-endpoint* (concatenate 'string *api-root* "/oauth/request_token"))
@@ -12,13 +13,16 @@
 (defparameter *get-access-token-endpoint* (concatenate 'string *api-root* "/oauth/access_token"))
 
 ;; /files api calls and /thumbnails call go to the api-content server.
-(defparameter *api-content* "https://api-content.dropbox.com/1/files")
+(defparameter *files-uri* (concatenate 'string *api-content* "/files"))
+(defparameter *thumbnails-uri* (concatenate 'string *api-content*"/thumbnails"))
 
 (defparameter *account-info-uri* (concatenate 'string *api-root* "/account/info"))
 (defparameter *metadata-uri* (concatenate 'string *api-root* "/metadata"))
 (defparameter *revisions-uri* (concatenate 'string *api-root* "/revisions"))
 (defparameter *restore-uri* (concatenate 'string *api-root* "/restore"))
 (defparameter *search-uri* (concatenate 'string *api-root* "/search"))
+(defparameter *shares-uri* (concatenate 'string *api-root* "/shares"))
+(defparameter *media-uri* (concatenate 'string *api-root* "/media"))
 (defparameter *create-folder-uri* (concatenate 'string *api-root* "/fileops/create_folder"))
 (defparameter *delete-uri* (concatenate 'string *api-root* "/fileops/delete"))
 
@@ -59,7 +63,7 @@
   "Downloads a file. Note that this call goes to the api-content server."
   (let ((parameter (when rev-supplied-p
                      `(("rev" . ,rev))))
-        (merged-path (concatenate 'string *api-content* root "/" (encode-path path))))
+        (merged-path (concatenate 'string *files-uri* root "/" (encode-path path))))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token* :request-method :auth :user-parameters parameter :drakma-args `(:parameters ,parameter))
       (handle-response body status nil))))
@@ -101,6 +105,33 @@
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token* :request-method :auth :user-parameters parameter :drakma-args `(:parameters ,parameter))
       (handle-response body status))))
+
+(defun shares (&key (path nil path-supplied-p) (root "/dropbox") (decode t))
+  "Creates and returns a shareable link to files or folders."
+  (let ((merged-path (if path-supplied-p
+                         (concatenate 'string *shares-uri* root "/" (encode-path path))
+                         (concatenate 'string *shares-uri* root))))
+    (multiple-value-bind (body status)
+        (cl-oauth:access-protected-resource merged-path *access-token*)
+      (handle-response body status))))
+
+(defun media (&key (path nil path-supplied-p) (root "/dropbox") (decode t))
+  "Returns a link directly to a file."
+  (let ((merged-path (if path-supplied-p
+                         (concatenate 'string *media-uri* root "/" (encode-path path))
+                         (concatenate 'string *media-uri* root))))
+    (multiple-value-bind (body status)
+        (cl-oauth:access-protected-resource merged-path *access-token*)
+      (handle-response body status))))
+
+(defun thumbnails (&key (path nil path-supplied-p) (root "/dropbox") (decode nil))
+  "Gets a thumbnail for an image. Note that this call goes to the api-content server."
+  (let ((merged-path (if path-supplied-p
+                         (concatenate 'string *thumbnails-uri* root "/" (encode-path path))
+                         (concatenate 'string *thumbnails-uri* root))))
+    (multiple-value-bind (body status)
+        (cl-oauth:access-protected-resource merged-path *access-token* :request-method :auth)
+      (handle-response body status decode))))
 
 ; File Operations
 (defun create-folder (&key path (root "dropbox") (decode t))
