@@ -11,6 +11,9 @@
 (defparameter *auth-request-token-endpoint* "https://www.dropbox.com/1/oauth/authorize")
 (defparameter *get-access-token-endpoint* (concatenate 'string *api-root* "/oauth/access_token"))
 
+;; /files api calls and /thumbnails call go to the api-content server.
+(defparameter *api-content* "https://api-content.dropbox.com/1/files")
+
 (defparameter *account-info-uri* (concatenate 'string *api-root* "/account/info"))
 (defparameter *metadata-uri* (concatenate 'string *api-root* "/metadata"))
 (defparameter *create-folder-uri* (concatenate 'string *api-root* "/fileops/create_folder"))
@@ -49,6 +52,14 @@
     (handle-response body status decode)))
 
 ; Files and Metadata
+(defun get-file (&key path (root "/dropbox") (rev nil rev-supplied-p))
+  (let ((parameter (when rev-supplied-p
+                     `(("rev" . ,rev))))
+        (merged-path (concatenate 'string *api-content* root "/" path)))
+    (multiple-value-bind (body status)
+        (cl-oauth:access-protected-resource merged-path *access-token* :on-refresh t :request-method :auth)
+      (handle-response body status nil))))
+
 (defun get-metadata (&key (path nil path-supplied-p) (root "/dropbox") (decode t))
   "The metadata API location provides the ability to retrieve file and folder metadata and manipulate the directory structure by moving or deleting files and folders."
   (let ((merged-path (if path-supplied-p
