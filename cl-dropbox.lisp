@@ -63,7 +63,7 @@
   "Downloads a file. Note that this call goes to the api-content server."
   (let ((parameter (when rev-supplied-p
                      `(("rev" . ,rev))))
-        (merged-path (concatenate 'string *files-uri* root "/" (encode-path path))))
+        (merged-path (concatenate 'string *files-uri* root (encode-path path))))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token* :request-method :auth :user-parameters parameter :drakma-args `(:parameters ,parameter))
       (handle-response body status nil))))
@@ -71,7 +71,7 @@
 (defun get-metadata (&key (path nil path-supplied-p) (root "/dropbox") (decode t))
   "Retrieves file and folder metadata."
   (let ((merged-path (if path-supplied-p
-                          (concatenate 'string *metadata-uri* root "/" (encode-path path))
+                          (concatenate 'string *metadata-uri* root (encode-path path))
                           (concatenate 'string *metadata-uri* root))))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token*)
@@ -80,7 +80,7 @@
 (defun get-revisions (&key (path nil path-supplied-p) (root "/dropbox") (decode t))
   "Obtains metadata for the previous revisions of a file."
   (let ((merged-path (if path-supplied-p
-                         (concatenate 'string *revisions-uri* root "/" (encode-path path))
+                         (concatenate 'string *revisions-uri* root (encode-path path))
                          (concatenate 'string *revisions-uri* root))))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token*)
@@ -90,7 +90,7 @@
   "Restores a file path to a previous revision."
   (let ((parameter `(("rev" . ,rev)))
         (merged-path (if path-supplied-p
-                         (concatenate 'string *restore-uri* root "/" (encode-path path))
+                         (concatenate 'string *restore-uri* root (encode-path path))
                          (concatenate 'string *restore-uri* root))))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token* :request-method :auth :user-parameters parameter :drakma-args `(:parameters ,parameter))
@@ -100,7 +100,7 @@
   "Returns metadata for all files and folders that match the search query."
   (let ((parameter `(("query" . ,query)))
         (merged-path (if path-supplied-p
-                         (concatenate 'string *search-uri* root "/" (encode-path path))
+                         (concatenate 'string *search-uri* root (encode-path path))
                          (concatenate 'string *search-uri* root))))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token* :request-method :auth :user-parameters parameter :drakma-args `(:parameters ,parameter))
@@ -109,7 +109,7 @@
 (defun shares (&key (path nil path-supplied-p) (root "/dropbox") (decode t))
   "Creates and returns a shareable link to files or folders."
   (let ((merged-path (if path-supplied-p
-                         (concatenate 'string *shares-uri* root "/" (encode-path path))
+                         (concatenate 'string *shares-uri* root (encode-path path))
                          (concatenate 'string *shares-uri* root))))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token*)
@@ -118,7 +118,7 @@
 (defun media (&key (path nil path-supplied-p) (root "/dropbox") (decode t))
   "Returns a link directly to a file."
   (let ((merged-path (if path-supplied-p
-                         (concatenate 'string *media-uri* root "/" (encode-path path))
+                         (concatenate 'string *media-uri* root (encode-path path))
                          (concatenate 'string *media-uri* root))))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token*)
