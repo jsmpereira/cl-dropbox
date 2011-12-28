@@ -6,7 +6,8 @@
   :author "José Pereira <jsmpereira@gmail.com>"
   :depends-on (#:drakma
                #:cl-json
-               #:cl-oauth)
+               #:cl-oauth
+               #:cl-ppcre)
   :components ((:file "package")
                (:file "cl-dropbox")))
 

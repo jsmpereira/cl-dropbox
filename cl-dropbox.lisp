@@ -16,6 +16,7 @@
 
 (defparameter *account-info-uri* (concatenate 'string *api-root* "/account/info"))
 (defparameter *metadata-uri* (concatenate 'string *api-root* "/metadata"))
+(defparameter *revisions-uri* (concatenate 'string *api-root* "/revisions"))
 (defparameter *create-folder-uri* (concatenate 'string *api-root* "/fileops/create_folder"))
 (defparameter *delete-uri* (concatenate 'string *api-root* "/fileops/delete"))
 
@@ -53,25 +54,35 @@
 
 ; Files and Metadata
 (defun get-file (&key path (root "/dropbox") (rev nil rev-supplied-p))
+  "Downloads a file. Note that this call goes to the api-content server."
   (let ((parameter (when rev-supplied-p
                      `(("rev" . ,rev))))
-        (merged-path (concatenate 'string *api-content* root "/" path)))
+        (merged-path (concatenate 'string *api-content* root "/" (encode-path path))))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token* :on-refresh t :request-method :auth)
       (handle-response body status nil))))
 
 (defun get-metadata (&key (path nil path-supplied-p) (root "/dropbox") (decode t))
-  "The metadata API location provides the ability to retrieve file and folder metadata and manipulate the directory structure by moving or deleting files and folders."
+  "Retrieves file and folder metadata."
   (let ((merged-path (if path-supplied-p
-                          (concatenate 'string *metadata-uri* root path)
+                          (concatenate 'string *metadata-uri* root "/" (encode-path path))
                           (concatenate 'string *metadata-uri* root))))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token*)
       (handle-response body status decode))))
 
+(defun get-revisions (&key (path nil path-supplied-p) (root "/dropbox") (decode t))
+  "Obtains metadata for the previous revisions of a file."
+  (let ((merged-path (if path-supplied-p
+                         (concatenate 'string *revisions-uri* root "/" (encode-path path))
+                         (concatenate 'string *revisions-uri* root))))
+    (multiple-value-bind (body status)
+        (cl-oauth:access-protected-resource merged-path *access-token*)
+      (handle-response body status))))
+
 ; File Operations
 (defun create-folder (&key path (root "dropbox") (decode t))
-  "Create a folder relative to the user's Dropbox root or the user's application sandbox folder."
+  "Creates a folder."
   (multiple-value-bind (body status)
       (cl-oauth:access-protected-resource *create-folder-uri* *access-token*
                                           :user-parameters `(("path" . ,path)
@@ -93,3 +104,6 @@
           (json:decode-json-from-string body)
           body)
       (values (json:decode-json-from-string (flexi-streams:octets-to-string body)) status)))
+
+(defun encode-path (path)
+  (cl-ppcre:regex-replace-all "%2F" (cl-oauth:url-encode path) "/"))
