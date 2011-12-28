@@ -18,6 +18,7 @@
 (defparameter *metadata-uri* (concatenate 'string *api-root* "/metadata"))
 (defparameter *revisions-uri* (concatenate 'string *api-root* "/revisions"))
 (defparameter *restore-uri* (concatenate 'string *api-root* "/restore"))
+(defparameter *search-uri* (concatenate 'string *api-root* "/search"))
 (defparameter *create-folder-uri* (concatenate 'string *api-root* "/fileops/create_folder"))
 (defparameter *delete-uri* (concatenate 'string *api-root* "/fileops/delete"))
 
@@ -87,6 +88,16 @@
         (merged-path (if path-supplied-p
                          (concatenate 'string *restore-uri* root "/" (encode-path path))
                          (concatenate 'string *restore-uri* root))))
+    (multiple-value-bind (body status)
+        (cl-oauth:access-protected-resource merged-path *access-token* :request-method :auth :user-parameters parameter :drakma-args `(:parameters ,parameter))
+      (handle-response body status))))
+
+(defun do-search (&key (path nil path-supplied-p) query (root "/dropbox") (decode t))
+  "Returns metadata for all files and folders that match the search query."
+  (let ((parameter `(("query" . ,query)))
+        (merged-path (if path-supplied-p
+                         (concatenate 'string *search-uri* root "/" (encode-path path))
+                         (concatenate 'string *search-uri* root))))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token* :request-method :auth :user-parameters parameter :drakma-args `(:parameters ,parameter))
       (handle-response body status))))
