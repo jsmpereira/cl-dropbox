@@ -17,6 +17,7 @@
 (defparameter *account-info-uri* (concatenate 'string *api-root* "/account/info"))
 (defparameter *metadata-uri* (concatenate 'string *api-root* "/metadata"))
 (defparameter *revisions-uri* (concatenate 'string *api-root* "/revisions"))
+(defparameter *restore-uri* (concatenate 'string *api-root* "/restore"))
 (defparameter *create-folder-uri* (concatenate 'string *api-root* "/fileops/create_folder"))
 (defparameter *delete-uri* (concatenate 'string *api-root* "/fileops/delete"))
 
@@ -59,7 +60,7 @@
                      `(("rev" . ,rev))))
         (merged-path (concatenate 'string *api-content* root "/" (encode-path path))))
     (multiple-value-bind (body status)
-        (cl-oauth:access-protected-resource merged-path *access-token* :on-refresh t :request-method :auth)
+        (cl-oauth:access-protected-resource merged-path *access-token* :request-method :auth :user-parameters parameter :drakma-args `(:parameters ,parameter))
       (handle-response body status nil))))
 
 (defun get-metadata (&key (path nil path-supplied-p) (root "/dropbox") (decode t))
@@ -78,6 +79,16 @@
                          (concatenate 'string *revisions-uri* root))))
     (multiple-value-bind (body status)
         (cl-oauth:access-protected-resource merged-path *access-token*)
+      (handle-response body status))))
+
+(defun restore (&key (path nil path-supplied-p) rev (root "/dropbox") (decode t))
+  "Restores a file path to a previous revision."
+  (let ((parameter `(("rev" . ,rev)))
+        (merged-path (if path-supplied-p
+                         (concatenate 'string *restore-uri* root "/" (encode-path path))
+                         (concatenate 'string *restore-uri* root))))
+    (multiple-value-bind (body status)
+        (cl-oauth:access-protected-resource merged-path *access-token* :request-method :auth :user-parameters parameter :drakma-args `(:parameters ,parameter))
       (handle-response body status))))
 
 ; File Operations
