@@ -65,7 +65,7 @@
                      `(("rev" . ,rev))))
         (merged-path (concatenate 'string *files-uri* root (encode-path path))))
     (multiple-value-bind (body status)
-        (cl-oauth:access-protected-resource merged-path *access-token* :request-method :auth :user-parameters parameter :drakma-args `(:parameters ,parameter))
+        (cl-oauth:access-protected-resource merged-path *access-token* :request-method :get :user-parameters parameter :drakma-args `(:parameters ,parameter))
       (handle-response body status nil))))
 
 (defun get-metadata (&key (path nil path-supplied-p) (root "/dropbox") (decode t))
